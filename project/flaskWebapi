@@ -1,0 +1,35 @@
+from flask import Flask, request, jsonify
+import paho.mqtt.client as mqtt
+
+app = Flask(__name__)
+
+# MQTT configuration
+MQTT_BROKER = "localhost"  # Broker của bạn (địa chỉ IP hoặc domain)
+MQTT_PORT = 1883
+MQTT_TOPIC = "sensor/data"
+
+# MQTT client
+mqtt_client = mqtt.Client()
+mqtt_client.connect(MQTT_BROKER, MQTT_PORT, 60)
+
+@app.route('/set_data', methods=['POST'])
+def set_data():
+    data = request.json
+
+    rfid = data.get('rfid')
+    data_1 = data.get('data_1')
+    data_2 = data.get('data_2')
+
+    if not rfid or not data_1 or not data_2:
+        return jsonify({"error": "Invalid input"}), 400
+
+    # Định dạng dữ liệu gửi tới MQTT
+    mqtt_message = f"RFID: {rfid}, Data_1: {data_1}, Data_2: {data_2}"
+
+    # Publish dữ liệu tới MQTT topic
+    mqtt_client.publish(MQTT_TOPIC, mqtt_message)
+
+    return jsonify({"status": "Data sent to MQTT"}), 200
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
